@@ -228,6 +228,18 @@
       console.log(`Błąd: ${error.message}`);
     });
 
+  // Ten sam łańcuch bez klamer i return: strzałka sama zwraca wynik wyrażenia,
+  // czyli kolejną obietnicę, więc .then dostaje to samo co przy jawnym return.
+  getUserByPromise(KNOWN_USER_ID)
+    .then((user) => getPostsByPromise(user.userId))
+    .then((posts) => getCommentsByPromise(posts[0].postId))
+    .then((comments) => {
+      console.log(`Komentarze: ${comments[0].text}`);
+    })
+    .catch((error) => {
+      console.log(`Błąd: ${error.message}`);
+    });
+
   // Ten sam pierwszy krok dla użytkownika, którego nie ma. Odrzucenie pomija wszystkie .then
   // i trafia od razu do .catch.
   getUserByPromise(MISSING_USER_ID)
