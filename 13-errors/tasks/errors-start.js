@@ -27,21 +27,7 @@
   const REQUIRED_ORDER_FIELDS = ["orderId", "customerEmail", "totalPln"];
 
   const parseOrder = (jsonText) => {
-    let parsedOrder;
-
-    try {
-      parsedOrder = JSON.parse(jsonText);
-    } catch {
-      throw new Error("Nie udało odczytać się zamówienia");
-    }
-
-    for (const fieldName of REQUIRED_ORDER_FIELDS) {
-      if (parsedOrder[fieldName] === undefined) {
-        throw new Error(`Brak pola: ${fieldName}`);
-      }
-    }
-
-    return parsedOrder;
+    // TODO: sparsuj ciąg JSON, a następnie sprawdź pola. W obu przypadkach rzuć Error.
   };
 
   //// Sprawdzenie
