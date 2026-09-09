@@ -48,9 +48,7 @@
     // TODO: wystartuj wszystkie zapytania naraz, potem policz sumę
   };
 
-  /////////////////
   //// Sprawdzenie
-  ////////////////
 
   const check = async () => {
     console.log(await fetchRateToPln("USD"));

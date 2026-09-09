@@ -26,9 +26,8 @@
       if (orderId === UNAVAILABLE_ORDER_ID) {
         error = new Error("Brak towaru w magazynie");
       }
-      console.log("Stock has been reserved");
       onDone(error, "r_88");
-    }, 2000);
+    }, 200);
 
   const chargeCard = (reservationId, onDone) =>
     setTimeout(() => {
@@ -36,9 +35,8 @@
       if (typeof reservationId !== "string") {
         error = new Error("Brak numeru rezerwacji");
       }
-      console.log("Card has been charged");
       onDone(error, "pay_12");
-    }, 3000);
+    }, 300);
 
   const createShipment = (paymentId, onDone) =>
     setTimeout(() => {
@@ -46,23 +44,19 @@
       if (typeof paymentId !== "string") {
         error = new Error("Brak numeru płatności");
       }
-      console.log("Shipment has been created");
       onDone(error, "PL123456789");
-    }, 2500);
+    }, 250);
 
   // Kod do przepisania.
   const finalizeOrderWithCallbacks = (orderId, onFinished) => {
     reserveStock(orderId, (reserveError, reservationId) => {
-      if (reserveError)
-        return onFinished(`Nie udało się: ${reserveError.message}`);
+      if (reserveError) return onFinished(`Nie udało się: ${reserveError.message}`);
 
       chargeCard(reservationId, (chargeError, paymentId) => {
-        if (chargeError)
-          return onFinished(`Nie udało się: ${chargeError.message}`);
+        if (chargeError) return onFinished(`Nie udało się: ${chargeError.message}`);
 
         createShipment(paymentId, (shipmentError, trackingNumber) => {
-          if (shipmentError)
-            return onFinished(`Nie udało się: ${shipmentError.message}`);
+          if (shipmentError) return onFinished(`Nie udało się: ${shipmentError.message}`);
 
           onFinished(`Wysyłka ${trackingNumber}`);
         });

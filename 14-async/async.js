@@ -341,12 +341,8 @@
 
   // Trzy operacje: dwie się udają, trzecia zawodzi. Obietnica rozstrzyga się raz, więc te same
   // trzy obiekty można przekazać obu kombinatorom.
-  const stock = new Promise((resolve) =>
-    setTimeout(() => resolve("towar dostępny"), 200),
-  );
-  const payment = new Promise((resolve) =>
-    setTimeout(() => resolve("płatność potwierdzona"), 300),
-  );
+  const stock = new Promise((resolve) => setTimeout(() => resolve("towar dostępny"), 200));
+  const payment = new Promise((resolve) => setTimeout(() => resolve("płatność potwierdzona"), 300));
 
   // Same udane: wyniki wracają w kolejności wejścia, mimo że payment kończy się później.
   Promise.all([stock, payment]).then((results) => {
@@ -354,10 +350,7 @@
   });
 
   const recommendations = new Promise((resolve, reject) => {
-    setTimeout(
-      () => reject(new Error("Silnik rekomendacji nie odpowiada")),
-      250,
-    );
+    setTimeout(() => reject(new Error("Silnik rekomendacji nie odpowiada")), 250);
   });
 
   // Z jedną odrzuconą: cały all zostaje odrzucony, a wyniki dwóch udanych przepadają.
@@ -386,8 +379,7 @@
   // Aby wykonać operacje równolegle, najpierw uruchamiamy je wszystkie, a dopiero potem
   // czekamy na wyniki.
 
-  const wait = (delayMs) =>
-    new Promise((resolve) => setTimeout(resolve, delayMs));
+  const wait = (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs));
   const loadReport = (reportName) => wait(3000).then(() => reportName);
 
   const demoSequentialVersusParallel = async () => {
@@ -398,11 +390,7 @@
     console.timeEnd("po kolei"); // około 900 ms, czyli trzy razy po 300
 
     console.time("równolegle");
-    await Promise.all([
-      loadReport("sprzedaż"),
-      loadReport("zwroty"),
-      loadReport("magazyn"),
-    ]);
+    await Promise.all([loadReport("sprzedaż"), loadReport("zwroty"), loadReport("magazyn")]);
     console.timeEnd("równolegle"); // około 300 ms, ponieważ wszystkie trzy startują naraz
 
     // Po kolei pobieramy tylko wtedy, gdy krok N potrzebuje wyniku kroku N-1,
@@ -474,11 +462,9 @@
   console.log(loadedReports); // []
 
   // Poprawnie: map zachowuje zwracane obietnice, a Promise.all czeka na wszystkie.
-  Promise.all(reportNames.map((reportName) => loadReport(reportName))).then(
-    (reports) => {
-      console.log(reports); // [ 'sprzedaż', 'zwroty', 'magazyn' ]
-    },
-  );
+  Promise.all(reportNames.map((reportName) => loadReport(reportName))).then((reports) => {
+    console.log(reports); // [ 'sprzedaż', 'zwroty', 'magazyn' ]
+  });
 }
 
 ////////
