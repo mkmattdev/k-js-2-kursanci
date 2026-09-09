@@ -144,7 +144,7 @@
   // Ze stanu pending przechodzi do jednego z pozostałych dokładnie raz i zmiana ta jest
   // nieodwracalna. Wynik odbieramy metodą .then, błąd metodą .catch.
 
-  const paymentAccepted = new Promise((resolve) => {
+  const paymentAccepted = new Promise((resolve, reject) => {
     setTimeout(() => resolve("płatność przyjęta"), 5000);
   });
 
@@ -159,12 +159,22 @@
   console.log("Kod pod obietnicą - wykona się przed .then");
 
   const paymentRejected = new Promise((resolve, reject) => {
-    setTimeout(() => reject(new Error("Karta odrzucona")), 300);
+    const isAccepted = true; // rezultat wraca z Paypalla
+
+    if (isAccepted) {
+      resolve("Platnosc zakonczona sukcesem");
+    } else {
+      reject("Płatność odrzucona");
+    }
   });
 
-  paymentRejected.catch((error) => {
-    console.log(`Błąd: ${error.message}`); // "Błąd: Karta odrzucona"
-  });
+  paymentRejected
+    .then((result) => {
+      console.log(result);
+    })
+    .catch((error) => {
+      console.log(`Błąd: ${error.message}`); // "Błąd: Karta odrzucona"
+    });
 }
 
 ////////
@@ -249,4 +259,122 @@
     .catch((error) => {
       console.log(`Błąd: ${error.message}`);
     });
+}
+
+////////
+//// 5. Sposób 3: async i await
+////////
+{
+  const KNOWN_USER_ID = 1;
+  const MISSING_USER_ID = 999;
+  const USER_DELAY_MS = 4000;
+  const POSTS_DELAY_MS = 3000;
+  const COMMENTS_DELAY_MS = 5000;
+
+  const getUserByPromise = (userId) =>
+    new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (userId !== KNOWN_USER_ID) {
+          reject(new Error(`Nie ma użytkownika ${userId}`));
+          return;
+        }
+
+        console.log("pobrano użytkownika: Anna");
+        resolve({ userId, name: "Anna" });
+      }, USER_DELAY_MS);
+    });
+
+  const getPostsByPromise = (userId) =>
+    new Promise((resolve) => {
+      setTimeout(() => {
+        console.log("pobrano posty: 1");
+        resolve([{ postId: 11, title: "Pierwszy post" }]);
+      }, POSTS_DELAY_MS);
+    });
+
+  const getCommentsByPromise = (postId) =>
+    new Promise((resolve) => {
+      setTimeout(() => {
+        console.log("pobrano komentarze: 1");
+        resolve([{ commentId: 101, text: "Świetny wpis" }]);
+      }, COMMENTS_DELAY_MS);
+    });
+
+  const showComments = async (userId) => {
+    try {
+      const user = await getUserByPromise(userId); // sugar syntax: getUserByPromise(userId).then(result => {...})
+      const posts = await getPostsByPromise(user.userId);
+      const comments = await getCommentsByPromise(posts[0].postId);
+
+      console.log("Komentarze: ", comments);
+    } catch (error) {
+      console.log(`Błąd: ${error.message}`);
+    }
+  };
+
+  showComments(KNOWN_USER_ID);
+}
+
+////////
+//// 6. Promise.all kontra Promise.allSettled
+////////
+{
+  const stock = new Promise((resolve, reject) =>
+    setTimeout(() => reject("towar niedostępny"), 2000),
+  );
+
+  const payment = new Promise((resolve, reject) =>
+    setTimeout(() => resolve("płatność anulowania"), 100),
+  );
+
+  // Promise.all - then wykonuje się WTEDY I TYLKO WTEDY, GDY wszystkie promisy w tablicy są fulfilled. Wystarczy chociaż jeden kończący się rejected - wchodzimy do .catch
+  // Promisy w tablicy startują równolegle, najlepiej stosować dla zdarzeń niezależnych
+  // Promise.all([stock, payment])
+  //   .then((result) => {
+  //     console.log("RESULT", result);
+  //   })
+  //   .catch((error) => {
+  //     console.log("ERRPR", error);
+  //   });
+
+  // Promise.allSettled - then wykonuje się ZAWSZE, gdy wszystkie promisy w tablicy kończą się (bez względu czy są fulfilled czy rejected)
+  // W then results zwracamy tablicę rezultatów - jeżeli obietnica jest fulfilled - mamy status + value. Jeżeli obietnica jest rejected - mamy status + reason.
+  Promise.allSettled([stock, payment]).then((results) => {
+    console.log(results);
+  });
+}
+
+////////
+//// 7. Po kolei kontra równolegle
+////////
+{
+  const wait = (delayMs) =>
+    new Promise((resolve) => setTimeout(resolve, delayMs));
+
+  const loadReport = (reportName) => wait(3000).then(() => reportName);
+
+  const demoSequentialVersusParallel = async () => {
+    console.time("po kolei");
+    await loadReport("sprzedaż");
+    await loadReport("zwroty");
+    await loadReport("magazyn");
+    console.timeEnd("po kolei"); // ?
+
+    console.time("równolegle");
+    await Promise.all([
+      loadReport("sprzedaż"),
+      loadReport("zwroty"),
+      loadReport("magazyn"),
+    ]);
+    console.timeEnd("równolegle"); // ?
+  };
+
+  demoSequentialVersusParallel();
+}
+
+////////
+//// 8. fetch, czyli prawdziwa sieć
+////////
+{
+  const USERS_API_URL = "https://jsonplaceholder.typicode.com/users";
 }
