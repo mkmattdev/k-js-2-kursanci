@@ -55,4 +55,79 @@
 //// 3. unknown, czyli "nie wiem, więc sprawdź"
 ////////
 {
+  // unknown mówi to samo co any o naszej wiedzy: nie wiemy, co tu przyszło. Różni się
+  // konsekwencją. Na wartości unknown nie wolno zrobić NICZEGO, dopóki nie sprawdzimy,
+  // czym ona jest.
+  // Uwaga na cudzysłów w środku: kwota jest tu jako napis, a nie jako liczba.
+  const rawTotal: unknown = JSON.parse('"249"');
+
+  // Błąd
+  // console.log(rawTotal + 100); // "249100", czyli sklejenie napisów zamiast dodawania
+
+  // Po sprawdzeniu typu TypeScript wie, z czym ma do czynienia, i pozwala na resztę.
+  if (typeof rawTotal === "number") {
+    console.log(rawTotal + 100);
+  } else {
+    console.log("to nie jest liczba, doliczanie pominięte"); // ta gałąź się wykona
+  }
+
+  // To jest ta sama walidacja, którą w dniu 2 pisaliśmy ręcznie, tyle że teraz kompilator
+  // pilnuje, żeby jej nie pominąć.
 }
+
+////////
+//// 4. never, czyli "to się nie zdarzy"
+////////
+{
+  // never to typ wartości, której nie ma. Pojawia się sam w dwóch miejscach.
+  //
+  // Pierwsze: funkcja, która nigdy nie zwraca wyniku, bo zawsze rzuca błąd.
+  const failOrder = (reason: string): never => {
+    throw new Error(reason);
+  };
+
+  // Drugie, i to jest zastosowanie praktyczne: miejsce w kodzie, do którego nie da się
+  // dojść. Po sprawdzeniu obu wartości unii nie zostaje już nic, więc zmienna ma typ never.
+  type PaymentMethod = "card" | "transfer";
+
+  const describePayment = (method: PaymentMethod) => {
+    if (method === "card") {
+      return "Płatność kartą";
+    }
+
+    if (method === "transfer") {
+      return "Przelew";
+    }
+
+    const impossiblePaymentMethod: never = method;
+
+    return failOrder(
+      `Nieobsłużona metoda płatności: ${impossiblePaymentMethod}`,
+    );
+  };
+
+  console.log(describePayment("card")); // Płatność kartą
+
+  // Po co to komu: gdy do PaymentMethod dojdzie kiedyś "blik", przypisanie do never
+  // przestanie się kompilować i kompilator wskaże miejsce, w którym trzeba dopisać obsługę.
+  // Bez tej linii program po cichu zwróciłby undefined.
+}
+
+////////
+//// WIEDZA W PIGUŁCE
+////////
+//
+//  1. Typy istnieją wyłącznie przed uruchomieniem. Po kompilacji zostaje zwykły JavaScript,
+//     więc TypeScript nie sprawdzi za ciebie danych, które przyjdą z sieci.
+//
+//  2. Typ piszemy tam, gdzie TypeScript nie ma go skąd wywnioskować, czyli przede wszystkim
+//     przy parametrach funkcji. Reszty nie annotujemy bez potrzeby.
+//
+//  3. any wyłącza sprawdzanie. Wchodzi do kodu najczęściej niejawnie, przez JSON.parse
+//     i przez odpowiedzi z sieci.
+//
+//  4. unknown to bezpieczny odpowiednik any: też oznacza "nie wiem, co to jest", ale nie
+//     pozwala niczego z tym zrobić przed sprawdzeniem typu.
+//
+//  5. never to typ wartości, której nie ma. Przypisanie do never w ostatniej gałęzi
+//     sprawia, że dopisanie nowego wariantu unii przestaje się kompilować.
