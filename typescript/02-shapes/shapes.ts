@@ -6,29 +6,18 @@
 //// 1. Alias typu i interfejs
 ////////
 {
-  type OrderAlias = {
-    orderId: number;
-    totalPln?: number;
-    isShipped?: boolean;
-  };
+  // Ten sam kształt zapisany dwoma sposobami. W tym zastosowaniu są wymienne.
+  type OrderAlias = { orderId: number; totalPln: number };
 
   interface OrderInterface {
     orderId: number;
     totalPln: number;
-    isShipped: boolean;
   }
 
-  const firstOrder: OrderInterface = {
-    orderId: 50,
-    totalPln: 200,
-    isShipped: true,
-  };
+  const first: OrderAlias = { orderId: 1, totalPln: 249 };
+  const second: OrderInterface = { orderId: 2, totalPln: 99 };
 
-  const secondOrder: OrderAlias = {
-    orderId: 100,
-  };
-
-  console.log(firstOrder.totalPln + secondOrder.totalPln);
+  console.log(first.totalPln + second.totalPln); // 348
 
   // Wniosek: do opisu obiektu są wymienne, bierz to, czego używa zespół. Alias musi
   // wejść tam, gdzie kształt nie jest obiektem, czyli przy unii i typie prostym.
@@ -38,7 +27,8 @@
 //// 2. Opcjonalne klucze, metody i parametry
 ////////
 {
-  // Znak zapytania znaczy - tego może nie być.
+  // Znak zapytania znaczy w tych trzech miejscach to samo: tego może nie być. Za każdym
+  // razem dokłada do typu undefined, więc kompilator wymusza policzenie się z brakiem.
 
   //// a) klucz obiektu
 
@@ -47,108 +37,80 @@
     note?: string;
   };
 
-  const firstOrder: Order = {
-    orderId: 10,
-    note: "Fast delivery",
-  };
+  const rushOrder: Order = { orderId: 1, note: "zadzwonić przed dostawą" };
+  const plainOrder: Order = { orderId: 2 };
 
-  const secondOrder: Order = {
-    orderId: 11,
-  };
+  // ?. przerywa odczyt na undefined zamiast rzucać błędem, a ?? podstawia wartość zastępczą.
+  console.log(rushOrder.note?.toUpperCase() ?? "bez uwag"); // ZADZWONIĆ PRZED DOSTAWĄ
+  console.log(plainOrder.note?.toUpperCase() ?? "bez uwag"); // bez uwag
 
-  const thirdOrder: Order = {
-    orderId: 15,
-    note: "High priority",
-  };
+  //// b) parametr funkcji
 
-  console.log(firstOrder.note?.toUpperCase() ?? "Without any notes"); // ?. -> optional chaining, ?? - nullish
+  // W ciele funkcji parametr opcjonalny ma typ "liczba albo undefined", więc trzeba go
+  // sprawdzić. Opcjonalne parametry stoją zawsze na końcu listy, bo inaczej nie dałoby się
+  // ich pominąć przy wywołaniu.
+  const formatPrice = (pricePln: number, discountPercent?: number) =>
+    discountPercent === undefined
+      ? `${pricePln} zł`
+      : `${pricePln - (pricePln * discountPercent) / 100} zł`;
 
-  const formatPrice = (pricePln: number, discountPercent?: number) => {
-    // wersja A - ternary operator
-    // return discountPercent && discountPercent > 0 ? pricePln * (1 - discountPercent / 100) : pricePln // ... ? ... : ... <- ternary operator
-
-    // wersja B - klasyczny if-else
-    if (discountPercent && discountPercent > 0) {
-      return pricePln * (1 - discountPercent / 100);
-    } else {
-      return pricePln;
-    }
-  };
-
-  console.log(formatPrice(100));
-  console.log(formatPrice(100, 10));
+  console.log(formatPrice(100)); // 100 zł
+  console.log(formatPrice(100, 10)); // 90 zł
 }
 
 ////////
-//// 3. Zawężanie (narrowing), czyli skąd TypeScript wie, co trzyma
+//// 3. Zawężanie, czyli skąd TypeScript wie, co trzyma
 ////////
 {
   // Gdy wartość może być jednym z kilku typów, kompilator nie pozwoli na nic, co nie działa
   // dla wszystkich. Zawężanie to sprawdzenie, po którym wie już, z czym ma do czynienia.
   // Każdy sposób niżej to zwykły JavaScript, więc pilnuje danych także po uruchomieniu.
 
-  // a) typeof - dla typów PRYMITYWNYCH
+  //// a) typeof, dla typów prostych
 
   const describeId = (customerId: string | number) => {
-    // if (typeof customerId === "string") {
-    //   return customerId.toUpperCase();
-    // } else {
-    //   return customerId.toFixed(2);
-    // }
+    if (typeof customerId === "string") {
+      return customerId.toUpperCase(); // od tej linii w dół customerId jest napisem
+    }
 
-    // 2 sposób - ternary
-    return typeof customerId === "string"
-      ? customerId.toUpperCase()
-      : customerId.toFixed(2);
+    return customerId.toFixed(0); // a tu może być już tylko liczbą
   };
 
-  console.log(describeId("ab-12"));
-  console.log(describeId(7));
+  console.log(describeId("ab-12")); // AB-12
+  console.log(describeId(7)); // 7
 
-  // b) in
+  //// b) in, dla obiektów o różnych polach
+
   type PrivateCustomer = { name: string };
   type CompanyCustomer = { companyName: string; taxNumber: string };
 
-  const describeCustomer = (customer: PrivateCustomer | CompanyCustomer) => {
-    return "taxNumber" in customer // in robi narrowing dla obiektów
-      ? `${customer.companyName}, NIP: ${customer.taxNumber}`
+  const describeCustomer = (customer: PrivateCustomer | CompanyCustomer) =>
+    "taxNumber" in customer
+      ? `${customer.companyName}, NIP ${customer.taxNumber}`
       : customer.name;
-  };
 
   console.log(describeCustomer({ name: "Anna" })); // Anna
-  console.log(describeCustomer({ companyName: "Sklep ABC", taxNumber: "123" })); // Sklep ABC, NIP: 123
+  console.log(describeCustomer({ companyName: "Sklep", taxNumber: "123" })); // Sklep, NIP 123
 
-  // c) instanceof - dla instancji klasy
-  const describeDelivery = (deliveryDate: Date | string) => {
-    return deliveryDate instanceof Date
-      ? `Dostawa w ${deliveryDate.getFullYear()}`
+  //// c) instanceof, dla instancji klasy
+
+  // Date jest klasą, więc po sprawdzeniu wolno wywołać getFullYear. typeof dałoby "object".
+  const describeDelivery = (deliveryDate: Date | string) =>
+    deliveryDate instanceof Date
+      ? `dostawa w ${deliveryDate.getFullYear()}`
       : deliveryDate;
-  };
 
-  console.log(describeDelivery(new Date(2026, 8, 8))); // Dostawa w 2026
-  console.log(describeDelivery("Wysyłka w dwa dni")); // Wysyłka w dwa dni
+  console.log(describeDelivery(new Date(2026, 8, 8))); // dostawa w 2026
+  console.log(describeDelivery("wysyłka w 2 dni")); // wysyłka w 2 dni
 
-  // d) Array.isArray - dla tablic
-  const describeCoupons = (couponCodes: string | string[]) => {
-    if (Array.isArray(couponCodes)) {
-      return couponCodes.join(", "); // .join - zmienia tablicę w string oddzielając poszczególne elementy tablicy separatorem
-    } else {
-      return couponCodes;
-    }
-  };
+  //// d) Array.isArray, dla tablic
 
-  console.log(describeCoupons(["WIOSNA", "STUDENT"]));
-  console.log(describeCoupons("WIOSNA"));
-}
+  // Ten sam kod rabatowy bywa pojedynczym napisem albo listą.
+  const describeCoupons = (couponCodes: string | string[]) =>
+    Array.isArray(couponCodes) ? couponCodes.join(", ") : couponCodes;
 
-{
-  // JOIN
-  const names = ["Anna", "Mateusz", "Tomek"];
-  console.log(names.join(" | "));
-
-  // SPLIT
-  const namesStr = "Anna | Mateusz | Tomek";
-  console.log(namesStr.split(" | "));
+  console.log(describeCoupons(["WIOSNA", "STUDENT"])); // WIOSNA, STUDENT
+  console.log(describeCoupons("WIOSNA")); // WIOSNA
 }
 
 ////////
